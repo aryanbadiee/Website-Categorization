@@ -3,4 +3,4 @@ This program tries to detect the subject of the website with artificial intellig
 
 ### Supported Languages:
 * English
-* Persian(Farsi)
+* Persian (فارسی)
