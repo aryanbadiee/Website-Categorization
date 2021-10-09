@@ -1,2 +1,6 @@
 # Website Categorization
-Recognize the subject of websites
+This program tries to detect the subject of the website with artificial intelligence (NLP, ...)
+
+### Supported Languages:
+* English
+* Persian(Farsi)
