@@ -4,3 +4,7 @@ This program tries to detect the subject of the website with artificial intellig
 ### Supported Languages:
 * English
 * Persian (فارسی)
+
+#### Requirements:
+* Selenium Driver
+* Python >= 3.10
