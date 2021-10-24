@@ -88,6 +88,7 @@ class WebsiteClassification:
 
         print('The number of internal links for', domain, '=', len(internal_links))
         selected_links = random.sample(internal_links, k=len(internal_links) // 4)
+        selected_links = set(selected_links)  # remove duplicated links
         print('The number of selected links for', domain, '=', len(selected_links))
 
         print('-' * 60)  # separator line
@@ -98,7 +99,8 @@ class WebsiteClassification:
         for category, words in self.categories.items():
             word_count = 0
             for word in words:
-                word_count += page_source.count(word.lower())
+                if word in page_source.lower():
+                    word_count += 1
 
             repetitions[category] = word_count
 
@@ -109,7 +111,8 @@ class WebsiteClassification:
                 for category, words in self.categories.items():
                     word_count = 0
                     for word in words:
-                        word_count += page_source.count(word.lower())
+                        if word in page_source.lower():
+                            word_count += 1
 
                     repetitions[category] += word_count
             except Exception as ex:
@@ -129,6 +132,6 @@ class WebsiteClassification:
 
 if __name__ == "__main__":
     website_classification = WebsiteClassification("../datasets")
-    subject = website_classification.classification("https://komsera.com")
+    subject = website_classification.classification("https://chavoosh.com")
 
     print('-' * 60, subject, sep='\n')
