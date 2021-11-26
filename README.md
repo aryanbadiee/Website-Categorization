@@ -5,6 +5,6 @@ Website Topic Discovery: The goal of this project is recognition of the subject 
 * Persian (فارسی)
 
 #### Requirements:
-* Python >= 3.10
+* Python >= 3.9
 * Selenium (Driver & Module)
 * NLTK
