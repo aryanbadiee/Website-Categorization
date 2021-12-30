@@ -63,9 +63,8 @@ class WebsiteClassification:
             if self.proxy is not None:  # set proxy
                 options.add_argument('--proxy-server=%s' % self.proxy)
 
-            driver = webdriver.Chrome(
-                executable_path="../browser_driver/chromedriver", options=options
-            )
+            driver = webdriver.Chrome(executable_path="../browser_driver/chromedriver",
+                                      options=options)
 
             return driver
         else:
@@ -155,7 +154,7 @@ class WebsiteClassification:
 if __name__ == "__main__":
     website_classification = WebsiteClassification("../datasets")
 
-    for d, real_subject in random.sample(website_classification.domains, k=5):
+    for d, real_subject in random.sample(website_classification.domains, k=3):
         subject = website_classification.classification(d)
         print(
             '-' * 60,
