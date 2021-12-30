@@ -9,6 +9,7 @@ from typing import AnyStr, Optional
 import pause
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
 
 
 class WebsiteClassification:
@@ -63,8 +64,9 @@ class WebsiteClassification:
             if self.proxy is not None:  # set proxy
                 options.add_argument('--proxy-server=%s' % self.proxy)
 
-            driver = webdriver.Chrome(executable_path="../browser_driver/chromedriver",
-                                      options=options)
+            driver = webdriver.Chrome(
+                service=Service(executable_path="../browser_driver/chromedriver"), options=options
+            )
 
             return driver
         else:
