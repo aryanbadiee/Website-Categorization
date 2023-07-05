@@ -1,169 +1,76 @@
-# standard library:
-import random
+# Standard libraries:
 import csv
-from os import path, scandir
-from urllib.parse import urlparse
-from typing import AnyStr, Optional
+from typing import Optional
 
-# other library:
-import pause
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
+# Other libraries:
+import requests
+from bs4 import BeautifulSoup
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.svm import LinearSVC
 
 
-class WebsiteClassification:
-    """ website classification class """
+def extract_text(domain) -> str:
+    """ Extracts text from a website """
 
-    def __init__(self, dataset: AnyStr, proxy: Optional[str] = None):
-        self.dataset = dataset
-        self.proxy = proxy
+    response = requests.get(domain)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    text = soup.get_text()  # or soup.text
 
-        self.categories, self.stop_words, self.domains = self.__prepare_datasets()
-        self.driver = self.__create_driver("chrome")
+    return text
 
-    def __prepare_datasets(self) -> tuple:
-        """ prepares datasets """
 
-        # categories:
-        categories = dict[str, list]()
-        for element in scandir(path.join(self.dataset, "categories")):
-            if element.is_file():  # just file
-                with open(element.path, encoding="UTF-8") as file:
-                    categories[element.name.removesuffix(".txt")] = file.read()\
-                        .splitlines(keepends=False)
+def trainer() -> tuple:
+    """ Trains a model for prediction """
 
-        # stop-words:
-        stop_words = list[str]()
-        for element in scandir(path.join(self.dataset, "stop_words")):
-            if element.is_file():  # just file
-                with open(element.path, encoding="UTF-8") as file:
-                    stop_words.extend(file.read().splitlines(keepends=False))
+    # Collects training texts and labels:
+    train_texts = list[str]()
+    train_labels = list[int]()
+    for data in training_data:
+        train_texts.append(extract_text(data['domain']))
+        train_labels.append(categories[data['category']])
 
-        # domains:
-        domains = list[tuple]()
-        for element in scandir(path.join(self.dataset, "domains")):
-            if element.is_file():  # just file
-                with open(element.path, encoding="UTF-8") as file:
-                    csv_reader = csv.reader(file)
-                    next(csv_reader)  # ignore head
-                    for row in csv_reader:
-                        domains.append(row)
+    # Creates feature vectors using TF-IDF vectorization:
+    vectorizer = TfidfVectorizer(min_df=.0, max_df=.25)  # [0.0, 0.25] to remove stop words!
+    train_vectors = vectorizer.fit_transform(train_texts)
 
-        return categories, stop_words, domains
+    # Trains a linear support vector classifier:
+    classifier = LinearSVC(dual='auto')
+    classifier.fit(train_vectors, train_labels)
 
-    def __create_driver(self, driver_type: str):
-        """ makes browser driver """
+    return vectorizer, classifier
 
-        if driver_type == "chrome":
-            options = webdriver.ChromeOptions()
 
-            options.add_argument("start-maximized")
-            options.add_experimental_option("excludeSwitches", ["enable-automation"])
-            options.add_experimental_option('useAutomationExtension', False)
-            if self.proxy is not None:  # set proxy
-                options.add_argument('--proxy-server=%s' % self.proxy)
+def predictor(domain) -> Optional[str]:
+    """ Predicts the category of a website """
 
-            driver = webdriver.Chrome(
-                service=Service(executable_path="../browser_driver/chromedriver"), options=options
-            )
+    text = extract_text(domain)
 
-            return driver
-        else:
-            raise TypeError(f"not supported {driver_type} driver!")
+    text_vector = vec.transform([text])
+    category_id = cls.predict(text_vector)[0]
 
-    def page_source(self, url: str) -> str:
-        """ gets web source code from an url """
-
-        self.driver.get(url)
-        pause.milliseconds(1_500)  # wait to load complete!
-
-        return self.driver.page_source.lower()
-
-    def classification(self, url: str) -> Optional[str]:
-        """ tries to set a category for the domain """
-
-        domain = urlparse(url).netloc.lower()
-        print(f"{domain = }")
-
-        try:
-            page_source = self.page_source(url)
-        except Exception as ex:
-            print(ex)
-            return  # or `return None`
-
-        # find all links from website:
-        web_elems = self.driver.find_elements(by=By.XPATH, value=".//a[@href]")
-
-        # find internal links:
-        internal_links = set[str]()
-        for web_elem in web_elems:
-            link = web_elem.get_attribute("href")
-            if domain in urlparse(link).netloc.lower():
-                internal_links.add(link)
-
-        print('-' * 60)  # separator line
-
-        internal_links = tuple(internal_links)  # convert set to tuple
-        print('The number of internal links for', domain, '=', len(internal_links))
-        selected_links = random.sample(internal_links, k=len(internal_links) // 4) \
-            if len(internal_links) <= 200 else \
-            random.sample(internal_links, k=50)
-        print('The number of selected links for', domain, '=', len(selected_links))
-
-        print('-' * 60)  # separator line
-
-        repetitions = dict()
-
-        # main page:
-        for category, words in self.categories.items():
-            word_count = 0
-            for word in words:
-                if word in page_source.lower():
-                    word_count += 1
-
-            repetitions[category] = word_count
-
-        # selected links:
-        for link in selected_links:
-            try:
-                page_source = self.page_source(link)
-                for category, words in self.categories.items():
-                    word_count = 0
-                    for word in words:
-                        if word in page_source.lower():
-                            word_count += 1
-
-                    repetitions[category] += word_count
-            except Exception as ex:
-                print(ex)
-                continue
-
-        total_words = sum(repetitions.values())
-        for category, repetition in repetitions.items():
-            print('%', format(repetition / total_words * 10 ** 2, '.2f'),
-                  " for \"%(category)s\"" % {"category": category}, sep='')
-
-        target_category = max(repetitions, key=lambda e: repetitions[e])
-        return target_category
-
-    def quit_driver(self) -> None:
-        """ quits driver """
-
-        self.driver.quit()  # quit driver!
+    for category, _id in categories.items():
+        if _id == category_id:
+            return category
 
 
 if __name__ == "__main__":
-    website_classification = WebsiteClassification("../datasets")
+    # Collects the train data:
+    training_data = list[dict]()
+    categories = dict[str, int]()
+    with open("../datasets/dataset.csv", 'rt') as file:
+        csv_reader = csv.reader(file)
+        csv_reader.__next__()  # Skips header!
 
-    for d, real_subject in random.sample(website_classification.domains, k=3):
-        subject = website_classification.classification(d)
-        print(
-            '-' * 60,
-            "Real Subject: %(domain)s" % {"domain": real_subject},
-            "Predicted Subject: %(domain)s" % {"domain": subject},
-            sep='\n',
-            end='\n' + '*' * 60 + '\n'
-        )
+        i = 0
+        for d, c in csv_reader:
+            training_data.append({"domain": d, "category": c})
+            if not categories.get(c):  # New category!
+                categories[c] = i
+                i += 1
 
-    website_classification.quit_driver()  # quit driver
+    vec, cls = trainer()  # Trains the model
+
+    # Example usage:
+    test_domain = "https://javacup.ir"
+    predicted_category = predictor(test_domain)
+    print('Predicted category:', predicted_category)
