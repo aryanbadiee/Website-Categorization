@@ -1,10 +1,11 @@
 # Website Categorization
-The purpose of this project is to detect the subject of Persian websites. Considering Python for implementation, web-scraping packages such as Selenium are used to crawl websites from a set of URLs. For each crawled website, preparations are made, including stop-words removal and tokenization to extract words and sentences. After associating each keyword with the TF-IDF score, the category with most score set to the subject of the website. Keywords for each category and stop-words are collected with human intelligence.
+The purpose of this project is to detect the subject of Farsi's websites. Considering `Python3` for implementation, web-scraping packages such as `requests` and `beautifulsoup` are used to extract texts from websites and with the help of TF-IDF vectorizer, the most relevant words are linked to the websites with a score and word vectors are created. Then, with the help of machine learning algorithms, it compares and predicts the similarity vector of the words of the websites.
 
-### Supported Languages:
-* Persian (فارسی)
+### Supported Languages
+* Farsi (Persian)
 
-#### Requirements:
+### Requirements
 * Python >= 3.9
-* Selenium (Driver & Module)
-* NLTK
+* requests library
+* beautifulsoup library
+* scikit-learn library
