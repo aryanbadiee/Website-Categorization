@@ -37,7 +37,7 @@ class WebsiteCategorization:
         for category, domains in train_data.items():
             text = ''
             for domain in domains:
-                text += extract_text(domain) + ' '
+                text += WebsiteCategorization.extract_text(domain) + ' '
 
             train_texts.append(text.strip())
             train_ids.append(self.cat2id[category])
@@ -61,7 +61,7 @@ class WebsiteCategorization:
     def predict(self, domain: str, /) -> tuple[str, int]:
         """ Predicts the category of the domain and the confidence score """
 
-        text = extract_text(domain)
+        text = WebsiteCategorization.extract_text(domain)
 
         text_vector = self.vectorizer.transform([text])
         scores = self.classifier.decision_function(text_vector)[0]
@@ -69,29 +69,28 @@ class WebsiteCategorization:
 
         return self.id2cat[category_id], scores[category_id]
 
+    def save(self, model_path: AnyStr, /) -> None:
+        """ Saves the model """
 
-def extract_text(domain: str, /) -> str:
-    """ Extracts text from the domain """
+        with open(model_path, 'wb') as file:
+            pickle.dump(self, file)
 
-    response = requests.get(domain, timeout=120)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    text = soup.get_text(separator=' ', strip=True)
+    @staticmethod
+    def load(model_path: AnyStr, /):
+        """ Loads the model """
 
-    return text
+        with open(model_path, 'rb') as file:
+            return pickle.load(file)
 
+    @staticmethod
+    def extract_text(domain: str, /) -> str:
+        """ Extracts text from the domain """
 
-def save(model, model_path: AnyStr, /) -> None:
-    """ Saves the model """
+        response = requests.get(domain, timeout=120)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        text = soup.get_text(separator=' ', strip=True)
 
-    with open(model_path, 'wb') as file:
-        pickle.dump(model, file)
-
-
-def load(model_path: AnyStr, /) -> WebsiteCategorization:
-    """ Loads the model """
-
-    with open(model_path, 'rb') as file:
-        return pickle.load(file)
+        return text
 
 
 if __name__ == "__main__":
@@ -112,13 +111,10 @@ if __name__ == "__main__":
     cls.train(data)
 
     # Saves the model:
-    # save(cls, "../model.ab3")
-
-    # Loads the model:
-    # cls = load("../model.ab3")
+    cls.save("../model/pre-trained_model.ab3")
 
     # Predicts the category of the domain and the confidence score:
-    sample_domain = "https://du.ac.ir"
+    sample_domain = "https://testhelper.ir/"
     predicted_category, conf = cls.predict(sample_domain)
     print(
         f"The category of {sample_domain} is {predicted_category}",
