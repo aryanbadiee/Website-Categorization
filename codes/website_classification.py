@@ -1,9 +1,9 @@
-# Standard libraries:
+# Standard libraries
 import csv
 import pickle
 from typing import AnyStr, Iterable
 
-# Other libraries:
+# Other libraries
 import numpy as np
 import requests
 from bs4 import BeautifulSoup
@@ -15,12 +15,12 @@ class WebsiteCategorization:
     """ This class provides facilities for training and predicting the category of websites """
 
     def __init__(self, unique_categories: Iterable, model: str = "linear", /):
-        # Category to ID:
+        # Category to ID
         cat2id = dict[str, int]()
         for i, category in enumerate(unique_categories):
             cat2id[category] = i
 
-        # ID to category:
+        # ID to category
         id2cat = dict[int, str]()
         for category, i in cat2id.items():
             id2cat[i] = category
@@ -28,7 +28,7 @@ class WebsiteCategorization:
         self.cat2id = cat2id
         self.id2cat = id2cat
 
-        # TF-IDF (term frequency-inverse document frequency):
+        # TF-IDF (term frequency-inverse document frequency)
         self.vectorizer = TfidfVectorizer(
             strip_accents="unicode",
             analyzer="word",
@@ -36,7 +36,7 @@ class WebsiteCategorization:
             # max_features=256
         )
 
-        # Model:
+        # Model
         if model == "linearSVC":
             self.model = LinearSVC(dual="auto")  # Linear
         elif model == "nonlinearSVC":
@@ -47,7 +47,7 @@ class WebsiteCategorization:
     def train(self, train_data: dict[str, list], /) -> None:
         """ Trains a model """
 
-        # Collects training texts and IDs:
+        # Collects training texts and IDs
         train_texts = list[str]()
         train_ids = list[int]()
         for category, domains in train_data.items():
@@ -58,10 +58,10 @@ class WebsiteCategorization:
             train_texts.append(text.strip())
             train_ids.append(self.cat2id[category])
 
-        # Creates feature vectors using TF-IDF vectorization:
+        # Creates feature vectors using TF-IDF vectorization
         train_vectors = self.vectorizer.fit_transform(train_texts)
 
-        # Trains the model:
+        # Trains the model
         self.model.fit(train_vectors, train_ids)
 
     def predict(self, domain: str, /) -> tuple[str, int]:
@@ -100,7 +100,7 @@ class WebsiteCategorization:
 
 
 if __name__ == "__main__":
-    # Obtains data:
+    # Obtains data
     data = dict[str, list]()
     with open("../datasets/dataset.csv", 'rt') as file_:
         csv_reader = csv.reader(file_)
@@ -112,11 +112,11 @@ if __name__ == "__main__":
             else:  # Exists!
                 data[category_].append(domain_)
 
-    # Builds and trains the model:
+    # Builds and trains the model
     cls = WebsiteCategorization(data.keys(), "nonlinearSVC")
     cls.train(data)
 
-    # Saves the model:
+    # Saves the model
     cls.save("../model/pre-trained_model.ab3")
 
     print("The model has been saved.")
